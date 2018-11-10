@@ -14,7 +14,7 @@ const DEFAULT_SCHEMA = "http://json-schema.org/schema#"
 
 type Document struct {
 	Schema string `json:"$schema,omitempty"`
-	Property
+	property
 }
 
 // Reads the variable structure into the JSON-Schema Document
@@ -42,17 +42,17 @@ func (d *Document) String() string {
 	return string(json)
 }
 
-type Property struct {
+type property struct {
 	Type                 string               `json:"type,omitempty"`
 	Custom               bool                 `json:"required"`
 	Format               string               `json:"format,omitempty"`
-	Items                *Property            `json:"items,omitempty"`
-	Properties           map[string]*Property `json:"properties,omitempty"`
+	Items                *property            `json:"items,omitempty"`
+	Properties           map[string]*property `json:"properties,omitempty"`
 	Required             []string             `json:"form,omitempty"`
 	AdditionalProperties bool                 `json:"additionalProperties,omitempty"`
 }
 
-func (p *Property) read(t reflect.Type, opts tagOptions) {
+func (p *property) read(t reflect.Type, opts tagOptions) {
 	jsType, format, kind := getTypeFromMapping(t)
 	if jsType != "" {
 		p.Type = jsType
@@ -73,30 +73,30 @@ func (p *Property) read(t reflect.Type, opts tagOptions) {
 	}
 }
 
-func (p *Property) readFromSlice(t reflect.Type) {
+func (p *property) readFromSlice(t reflect.Type) {
 	jsType, _, kind := getTypeFromMapping(t.Elem())
 	if kind == reflect.Uint8 {
 		p.Type = "string"
 	} else if jsType != "" {
-		p.Items = &Property{}
+		p.Items = &property{}
 		p.Items.read(t.Elem(), tagOptions(""))
 	}
 }
 
-func (p *Property) readFromMap(t reflect.Type) {
+func (p *property) readFromMap(t reflect.Type) {
 	jsType, format, _ := getTypeFromMapping(t.Elem())
 
 	if jsType != "" {
-		p.Properties = make(map[string]*Property, 0)
-		p.Properties[".*"] = &Property{Type: jsType, Format: format}
+		p.Properties = make(map[string]*property, 0)
+		p.Properties[".*"] = &property{Type: jsType, Format: format}
 	} else {
 		p.AdditionalProperties = true
 	}
 }
 
-func (p *Property) readFromStruct(t reflect.Type) {
+func (p *property) readFromStruct(t reflect.Type) {
 	p.Type = "object"
-	p.Properties = make(map[string]*Property, 0)
+	p.Properties = make(map[string]*property, 0)
 	p.AdditionalProperties = false
 
 	count := t.NumField()
@@ -116,7 +116,7 @@ func (p *Property) readFromStruct(t reflect.Type) {
 		format := field.Tag.Get("format")
 
 		if field.Anonymous {
-			embeddedProperty := &Property{}
+			embeddedProperty := &property{}
 			embeddedProperty.read(field.Type, opts)
 
 			for name, property := range embeddedProperty.Properties {
@@ -127,7 +127,7 @@ func (p *Property) readFromStruct(t reflect.Type) {
 			continue
 		}
 
-		p.Properties[name] = &Property{}
+		p.Properties[name] = &property{}
 		p.Properties[name].read(field.Type, opts)
 		if format != "" {
 			p.Properties[name].Format = format
